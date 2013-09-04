@@ -218,6 +218,13 @@ describe 'logrotate::rule' do
               .with_content(/^  create 0777 www-data/)
           end
 
+          it do
+            expect {
+              should contain_file('/etc/logrotate.d/test') \
+                .with_content(/^  su www-data www-data/)
+            }.to raise_error(RSpec::Expectations::ExpectationNotMetError)
+          end
+
           context 'and create_group => admin' do
             let(:params) {
               {
@@ -232,6 +239,11 @@ describe 'logrotate::rule' do
             it do
               should contain_file('/etc/logrotate.d/test') \
                 .with_content(/^  create 0777 www-data admin$/)
+            end
+
+            it do
+              should contain_file('/etc/logrotate.d/test') \
+                .with_content(/^  su www-data admin$/)
             end
           end
         end
