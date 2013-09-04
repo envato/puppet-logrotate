@@ -12,10 +12,15 @@
       opts << [@_create, @create_mode, @create_owner, @create_group].reject { |r|
         r == 'undef'
       }.join(' ')
+      opts << ['su', @create_owner, @create_group].reject { |r|
+        r == 'undef'
+      }.join(' ')
     else
       opts << @_create
     end
   end
+
+
 
   [
     '_compress', '_copy', '_copytruncate', '_delaycompress', '_dateext',
