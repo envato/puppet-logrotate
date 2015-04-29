@@ -74,17 +74,17 @@ missingok       - A Boolean specifying whether logrotate should ignore missing
                   log files or issue an error (optional).
 olddir          - A String path to a directory that rotated logs should be
                   moved to (optional).
-postrotate      - A command String that should be executed by /bin/sh after
-                  the log file is rotated (optional).
-prerotate       - A command String that should be executed by /bin/sh before
-                  the log file is rotated and only if it will be rotated
-                  (optional).
-firstaction     - A command String that should be executed by /bin/sh once
-                  before all log files that match the wildcard pattern are
-                  rotated (optional).
-lastaction      - A command String that should be execute by /bin/sh once 
-                  after all the log files that match the wildcard pattern are
-                  rotated (optional).
+postrotate      - A command String or an Array of Strings that should be
+                  executed by /bin/sh after the log file is rotated (optional).
+prerotate       - A command String or an Array of Strings that should be
+                  executed by /bin/sh before the log file is rotated and only
+                  if it will be rotated (optional).
+firstaction     - A command String or an Array of Strings that should be
+                  executed by /bin/sh once before all log files that match the
+                  wildcard pattern are rotated (optional).
+lastaction      - A command String or an Array of Strings that should be
+                  executed by /bin/sh once after all the log files that match
+                  the wildcard pattern are rotated (optional).
 rotate          - The Integer number of rotated log files to keep on disk
                   (optional).
 rotate_every    - How often the log files should be rotated as a String.
@@ -103,6 +103,15 @@ shredcycles     - The Integer number of times shred should overwrite log files
                   before unlinking them (optional).
 start           - The Integer number to be used as the base for the extensions
                   appended to the rotated log files (optional).
+su              - A Boolean specifying whether logrotate should rotate under
+                  the specific su_owner and su_group instead of the default.
+                  First available in logrotate 3.8.0. (optional)
+su_owner        - A username String that logrotate should use to rotate a
+                  log file set instead of using the default if
+                  su => true (optional).
+su_group        - A String group name that logrotate should use to rotate a
+                  log file set instead of using the default if
+                  su => true (optional).
 uncompresscmd   - The String command to be used to uncompress log files
                   (optional).
 ```

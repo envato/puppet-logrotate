@@ -10,7 +10,7 @@ class logrotate::defaults::debian {
     create       => true,
     create_owner => 'root',
     create_group => 'utmp',
-    rotate       => 1,
+    rotate       => '1',
   }
 
   logrotate::rule {
@@ -19,6 +19,6 @@ class logrotate::defaults::debian {
       create_mode => '0664';
     'btmp':
       path        => '/var/log/btmp',
-      create_mode => '0660';
+      create_mode => '0600';
   }
 }

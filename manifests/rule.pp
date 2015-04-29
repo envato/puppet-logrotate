@@ -54,17 +54,18 @@
 #                   log files or issue an error (optional).
 # olddir          - A String path to a directory that rotated logs should be
 #                   moved to (optional).
-# postrotate      - A command String that should be executed by /bin/sh after
-#                   the log file is rotated (optional).
-# prerotate       - A command String that should be executed by /bin/sh before
-#                   the log file is rotated and only if it will be rotated
-#                   (optional).
-# firstaction     - A command String that should be executed by /bin/sh once
-#                   before all log files that match the wildcard pattern are
-#                   rotated (optional).
-# lastaction      - A command String that should be execute by /bin/sh once
-#                   after all the log files that match the wildcard pattern are
-#                   rotated (optional).
+# postrotate      - A command String or an Array of Strings that should be
+#                   executed by /bin/sh after the log file is rotated
+#                   optional).
+# prerotate       - A command String or an Array of Strings that should be
+#                   executed by /bin/sh before the log file is rotated and
+#                   only if it will be rotated (optional).
+# firstaction     - A command String or an Array of Strings that should be
+#                   executed by /bin/sh once before all log files that match
+#                   the wildcard pattern are rotated (optional).
+# lastaction      - A command String or an Array of Strings that should be
+#                   executed by /bin/sh once after all the log files that match
+#                   the wildcard pattern are rotated (optional).
 # rotate          - The Integer number of rotated log files to keep on disk
 #                   (optional).
 # rotate_every    - How often the log files should be rotated as a String.
@@ -82,6 +83,15 @@
 #                   before unlinking them (optional).
 # start           - The Integer number to be used as the base for the extensions
 #                   appended to the rotated log files (optional).
+# su              - A Boolean specifying whether logrotate should rotate under
+#                   the specific su_owner and su_group instead of the default.
+#                   First available in logrotate 3.8.0. (optional)
+# su_owner        - A username String that logrotate should use to rotate a
+#                   log file set instead of using the default if
+#                   su => true (optional).
+# su_group        - A String group name that logrotate should use to rotate a
+#                   log file set instead of using the default if
+#                   su => true (optional).
 # uncompresscmd   - The String command to be used to uncompress log files
 #                   (optional).
 #
@@ -142,6 +152,9 @@ define logrotate::rule(
                         $shred           = 'undef',
                         $shredcycles     = 'undef',
                         $start           = 'undef',
+                        $su              = 'undef',
+                        $su_owner        = 'undef',
+                        $su_group        = 'undef',
                         $uncompresscmd   = 'undef'
                         ) {
 
@@ -166,8 +179,8 @@ define logrotate::rule(
 
   case $compress {
     'undef': {}
-    true: { $_compress = 'compress' }
-    false: { $_compress = 'nocompress' }
+    true: { $sane_compress = 'compress' }
+    false: { $sane_compress = 'nocompress' }
     default: {
       fail("Logrotate::Rule[${name}]: compress must be a boolean")
     }
@@ -175,8 +188,8 @@ define logrotate::rule(
 
   case $copy {
     'undef': {}
-    true: { $_copy = 'copy' }
-    false: { $_copy = 'nocopy' }
+    true: { $sane_copy = 'copy' }
+    false: { $sane_copy = 'nocopy' }
     default: {
       fail("Logrotate::Rule[${name}]: copy must be a boolean")
     }
@@ -184,8 +197,8 @@ define logrotate::rule(
 
   case $copytruncate {
     'undef': {}
-    true: { $_copytruncate = 'copytruncate' }
-    false: { $_copytruncate = 'nocopytruncate' }
+    true: { $sane_copytruncate = 'copytruncate' }
+    false: { $sane_copytruncate = 'nocopytruncate' }
     default: {
       fail("Logrotate::Rule[${name}]: copytruncate must be a boolean")
     }
@@ -193,8 +206,8 @@ define logrotate::rule(
 
   case $create {
     'undef': {}
-    true: { $_create = 'create' }
-    false: { $_create = 'nocreate' }
+    true: { $sane_create = 'create' }
+    false: { $sane_create = 'nocreate' }
     default: {
       fail("Logrotate::Rule[${name}]: create must be a boolean")
     }
@@ -202,8 +215,8 @@ define logrotate::rule(
 
   case $delaycompress {
     'undef': {}
-    true: { $_delaycompress = 'delaycompress' }
-    false: { $_delaycompress = 'nodelaycompress' }
+    true: { $sane_delaycompress = 'delaycompress' }
+    false: { $sane_delaycompress = 'nodelaycompress' }
     default: {
       fail("Logrotate::Rule[${name}]: delaycompress must be a boolean")
     }
@@ -211,8 +224,8 @@ define logrotate::rule(
 
   case $dateext {
     'undef': {}
-    true: { $_dateext = 'dateext' }
-    false: { $_dateext = 'nodateext' }
+    true: { $sane_dateext = 'dateext' }
+    false: { $sane_dateext = 'nodateext' }
     default: {
       fail("Logrotate::Rule[${name}]: dateext must be a boolean")
     }
@@ -220,16 +233,16 @@ define logrotate::rule(
 
   case $mail {
     'undef': {}
-    false: { $_mail = 'nomail' }
+    false: { $sane_mail = 'nomail' }
     default: {
-      $_mail = "mail ${mail}"
+      $sane_mail = "mail ${mail}"
     }
   }
 
   case $missingok {
     'undef': {}
-    true: { $_missingok = 'missingok' }
-    false: { $_missingok = 'nomissingok' }
+    true: { $sane_missingok = 'missingok' }
+    false: { $sane_missingok = 'nomissingok' }
     default: {
       fail("Logrotate::Rule[${name}]: missingok must be a boolean")
     }
@@ -237,16 +250,16 @@ define logrotate::rule(
 
   case $olddir {
     'undef': {}
-    false: { $_olddir = 'noolddir' }
+    false: { $sane_olddir = 'noolddir' }
     default: {
-      $_olddir = "olddir ${olddir}"
+      $sane_olddir = "olddir ${olddir}"
     }
   }
 
   case $sharedscripts {
     'undef': {}
-    true: { $_sharedscripts = 'sharedscripts' }
-    false: { $_sharedscripts = 'nosharedscripts' }
+    true: { $sane_sharedscripts = 'sharedscripts' }
+    false: { $sane_sharedscripts = 'nosharedscripts' }
     default: {
       fail("Logrotate::Rule[${name}]: sharedscripts must be a boolean")
     }
@@ -254,8 +267,8 @@ define logrotate::rule(
 
   case $shred {
     'undef': {}
-    true: { $_shred = 'shred' }
-    false: { $_shred = 'noshred' }
+    true: { $sane_shred = 'shred' }
+    false: { $sane_shred = 'noshred' }
     default: {
       fail("Logrotate::Rule[${name}]: shred must be a boolean")
     }
@@ -263,8 +276,8 @@ define logrotate::rule(
 
   case $ifempty {
     'undef': {}
-    true: { $_ifempty = 'ifempty' }
-    false: { $_ifempty = 'notifempty' }
+    true: { $sane_ifempty = 'ifempty' }
+    false: { $sane_ifempty = 'notifempty' }
     default: {
       fail("Logrotate::Rule[${name}]: ifempty must be a boolean")
     }
@@ -273,11 +286,11 @@ define logrotate::rule(
   case $rotate_every {
     'undef': {}
     'hour', 'hourly': {}
-    'day': { $_rotate_every = 'daily' }
-    'week': { $_rotate_every = 'weekly' }
-    'month': { $_rotate_every = 'monthly' }
-    'year': { $_rotate_every = 'yearly' }
-    'daily', 'weekly','monthly','yearly': { $_rotate_every = $rotate_every }
+    'day': { $sane_rotate_every = 'daily' }
+    'week': { $sane_rotate_every = 'weekly' }
+    'month': { $sane_rotate_every = 'monthly' }
+    'year': { $sane_rotate_every = 'yearly' }
+    'daily', 'weekly','monthly','yearly': { $sane_rotate_every = $rotate_every }
     default: {
       fail("Logrotate::Rule[${name}]: invalid rotate_every value")
     }
@@ -331,6 +344,14 @@ define logrotate::rule(
     }
   }
 
+  case $su {
+    'undef',false: {}
+    true: { $sane_su = 'su' }
+    default: {
+      fail("Logrotate::Rule[${name}]: su must be a boolean")
+    }
+  }
+
   case $mailfirst {
     'undef',false: {}
     true: {
@@ -338,7 +359,7 @@ define logrotate::rule(
         fail("Logrotate::Rule[${name}]: Can't set both mailfirst and maillast")
       }
 
-      $_mailfirst = 'mailfirst'
+      $sane_mailfirst = 'mailfirst'
     }
     default: {
       fail("Logrotate::Rule[${name}]: mailfirst must be a boolean")
@@ -348,7 +369,7 @@ define logrotate::rule(
   case $maillast {
     'undef',false: {}
     true: {
-      $_maillast = 'maillast'
+      $sane_maillast = 'maillast'
     }
     default: {
       fail("Logrotate::Rule[${name}]: maillast must be a boolean")
@@ -367,6 +388,16 @@ define logrotate::rule(
     fail("Logrotate::Rule[${name}]: create_mode requires create")
   }
 
+  # su requires at least su_owner
+  if ($su == true) and ($su_owner == 'undef') {
+    fail("Logrotate::Rule[${name}]: su requires su_owner and optional su_group")
+  }
+
+  # su should be set to true if su_owner exists
+  if ($su_owner != 'undef') and ($su != true) {
+    fail("Logrotate::Rule[${name}]: su_owner requires su")
+  }
+
   #############################################################################
   #
 
@@ -376,9 +407,17 @@ define logrotate::rule(
     'hour', 'hourly': {
       include logrotate::hourly
       $rule_path = "/etc/logrotate.d/hourly/${name}"
+
+      file { "/etc/logrotate.d/${name}":
+        ensure => absent,
+      }
     }
     default: {
       $rule_path = "/etc/logrotate.d/${name}"
+
+      file { "/etc/logrotate.d/hourly/${name}":
+        ensure => absent,
+      }
     }
   }
 

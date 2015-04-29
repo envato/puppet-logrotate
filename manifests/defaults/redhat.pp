@@ -10,7 +10,7 @@ class logrotate::defaults::redhat {
     create       => true,
     create_owner => 'root',
     create_group => 'utmp',
-    rotate       => 1,
+    rotate       => '1',
   }
 
   logrotate::rule {
@@ -21,7 +21,7 @@ class logrotate::defaults::redhat {
       minsize     => '1M';
     'btmp':
       path        => '/var/log/btmp',
-      create_mode => '0660',
+      create_mode => '0600',
       minsize     => '1M';
   }
 }
