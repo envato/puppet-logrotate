@@ -1,3 +1,4 @@
 .bundle/
 vendor/gems/
 .ruby-version
+bin/
